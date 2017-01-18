@@ -11,7 +11,7 @@ def getMouseCoords():
     return x,y
 
 def setMouseCoords(x,y):
-    win32api.SetCursorPos((x,y))
+    win32api.SetCursorPos((int(x),int(y)))
 
 def mouseLeftDown():
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)

@@ -46,6 +46,7 @@ def main():
     if foundWindow:
         startGame()
         game.createGameboard()
+        game.printBoard()
         game.connectGameboard()
         # nextLevel()
         # game.createGameboard()
