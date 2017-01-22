@@ -51,8 +51,8 @@ class Game():
         for y in range(_BOARD_HEIGHT_BLOCK):
             for x in range(_BOARD_WIDTH_BLOCK):
                 # Magic number five is offset to ensure a blob is sampled correctly, remove it and in some cases a blob is missed
-                color = gameboardImage.getpixel((self.blocksize/2+x*self.blocksize, self.blocksize/2+y*self.blocksize+5))
-                # print(x,y,color)
+                magicNum = 10
+                color = gameboardImage.getpixel((self.blocksize/2+x*self.blocksize, self.blocksize/2+y*self.blocksize+magicNum))
                 if(color == _COLOR_RED):
                     self.gameboard[y][x] = {'color': Color.red, 'objectType': MapObject.blob, 'coords': (x,y) ,'parentX': None, 'parentY': None, 'distance':-1}
                 elif(color == _COLOR_GREEN):
@@ -73,6 +73,14 @@ class Game():
             for x in range(_BOARD_WIDTH_BLOCK):
                 print(self.gameboard[y][x]['color'].name, end=" ")
             print()
+
+    # Resets all path of a certain color
+    def clearColor(self, color):
+        for y in range(_BOARD_HEIGHT_BLOCK):
+            for x in range(_BOARD_WIDTH_BLOCK):
+                if self.gameboard[y][x]['color'] == color and self.gameboard[y][x]['objectType'] == MapObject.path:
+                    self.gameboard[y][x]['color'] = Color.colorless
+                    self.gameboard[y][x]['objectType'] = MapObject.empty
 
     # Dijkstras bredsida
     # Finds shortest path from (startX,startY) to the nearest blob of the same color
@@ -107,7 +115,7 @@ class Game():
             tmpX = x
             tmpY = y-1
             if tmpY>=0 and self.gameboard[tmpY][tmpX]['distance'] > dist+1:
-                if self.gameboard[tmpY][tmpX]['objectType'] == MapObject.empty or self.gameboard[tmpY][tmpX]['color'] == color:# or (ignorePaths and self.gameboard[tmpY][tmpX]['objectType'] == MapObject.path):
+                if self.gameboard[tmpY][tmpX]['objectType'] == MapObject.empty or self.gameboard[tmpY][tmpX]['color'] == color or (ignorePaths and self.gameboard[tmpY][tmpX]['objectType'] == MapObject.path):
                     self.gameboard[tmpY][tmpX]['parentX'] = x
                     self.gameboard[tmpY][tmpX]['parentY'] = y
                     self.gameboard[tmpY][tmpX]['distance'] = dist+1
@@ -117,7 +125,7 @@ class Game():
             tmpX = x+1
             tmpY = y
             if tmpX<_BOARD_WIDTH_BLOCK and self.gameboard[tmpY][tmpX]['distance'] > dist+1:
-                if self.gameboard[tmpY][tmpX]['objectType'] == MapObject.empty or self.gameboard[tmpY][tmpX]['color'] == color:# or (ignorePaths and self.gameboard[tmpY][tmpX]['objectType'] == MapObject.path):
+                if self.gameboard[tmpY][tmpX]['objectType'] == MapObject.empty or self.gameboard[tmpY][tmpX]['color'] == color or (ignorePaths and self.gameboard[tmpY][tmpX]['objectType'] == MapObject.path):
                     self.gameboard[tmpY][tmpX]['parentX'] = x
                     self.gameboard[tmpY][tmpX]['parentY'] = y
                     self.gameboard[tmpY][tmpX]['distance'] = dist+1
@@ -127,7 +135,7 @@ class Game():
             tmpX = x
             tmpY = y+1
             if tmpY<_BOARD_HEIGHT_BLOCK and self.gameboard[tmpY][tmpX]['distance'] > dist+1:
-                if self.gameboard[tmpY][tmpX]['objectType'] == MapObject.empty or self.gameboard[tmpY][tmpX]['color'] == color:# or (ignorePaths and self.gameboard[tmpY][tmpX]['objectType'] == MapObject.path):
+                if self.gameboard[tmpY][tmpX]['objectType'] == MapObject.empty or self.gameboard[tmpY][tmpX]['color'] == color or (ignorePaths and self.gameboard[tmpY][tmpX]['objectType'] == MapObject.path):
                     self.gameboard[tmpY][tmpX]['parentX'] = x
                     self.gameboard[tmpY][tmpX]['parentY'] = y
                     self.gameboard[tmpY][tmpX]['distance'] = dist+1
@@ -137,13 +145,12 @@ class Game():
             tmpX = x-1
             tmpY = y
             if tmpX>=0 and self.gameboard[tmpY][tmpX]['distance'] > dist+1:
-                if self.gameboard[tmpY][tmpX]['objectType'] == MapObject.empty or self.gameboard[tmpY][tmpX]['color'] == color:# or (ignorePaths and self.gameboard[tmpY][tmpX]['objectType'] == MapObject.path):
+                if self.gameboard[tmpY][tmpX]['objectType'] == MapObject.empty or self.gameboard[tmpY][tmpX]['color'] == color or (ignorePaths and self.gameboard[tmpY][tmpX]['objectType'] == MapObject.path):
                     self.gameboard[tmpY][tmpX]['parentX'] = x
                     self.gameboard[tmpY][tmpX]['parentY'] = y
                     self.gameboard[tmpY][tmpX]['distance'] = dist+1
                     unvisited.append(self.gameboard[tmpY][tmpX])
 
-        print(current)
         # When goal has been reached unravel path by adding current positions coords to the stack
         # then set current pos to parent and repeat until start positions is reached
         pathStack = []
@@ -156,8 +163,9 @@ class Game():
             # If cross over another colors then add that color to unconnectedColors
             if not(current['color'] == Color.colorless) and current['color'] not in self.unconnectedColors:
                 self.unconnectedColors.append(current['color'])
+                self.clearColor(current['color'])
 
-        print(pathStack)
+        # print(pathStack)
         return pathStack
 
     # Takes a stack of coordinates and drags the cursor from the coords at the top of the stack to the bottom
@@ -165,20 +173,19 @@ class Game():
 
         # debug
         import time
-        time.sleep(0.3)
+        time.sleep(0.1)
 
         currPos = pathStack.pop()
         currColor = self.gameboard[currPos[1]][currPos[0]]['color']
         setMouseCoords(self.xPadding+int(self.blocksize/2)+currPos[0]*self.blocksize, self.yPadding+int(self.blocksize/2)+currPos[1]*self.blocksize)
-        # prevX = currPos[0]
-        # prevY = currPos[1]
         prevPos = currPos
         while pathStack:
-            time.sleep(0.1)
             currPos = pathStack.pop()
             # Mark new positions as a path
             self.gameboard[currPos[1]][currPos[0]]['color'] = currColor
-            self.gameboard[currPos[1]][currPos[0]]['objectType'] = MapObject.path
+            # Dont change to path if goal position since it is and must remain a blob
+            if pathStack:
+                self.gameboard[currPos[1]][currPos[0]]['objectType'] = MapObject.path
 
             if currPos[1]==prevPos[1]-1:#up
                 mouseDrag(Direction.up,self.blocksize)
@@ -188,23 +195,26 @@ class Game():
                 mouseDrag(Direction.down,self.blocksize)
             elif currPos[0]==prevPos[0]-1:#left
                 mouseDrag(Direction.left,self.blocksize)
-            # prevX = currPos[0]
-            # prevY = currPos[1]
             prevPos = currPos
 
     # Goes through the gameboard and finds one path between every pair of blobs
     def connectGameboard(self):
         # List of already finished colors
         # uncompletedColors = [Color.red, Color.green, Color.darkblue, Color.lightblue, Color.yellow, Color.purple]
-        while self.unconnectedColors:
-            print(self.unconnectedColors)
+        tries = 3
+        prevUnconnectedColors = []
+        while not(self.unconnectedColors==prevUnconnectedColors) and tries>0:
+            prevUnconnectedColors = list(self.unconnectedColors)
+            tries-=1
             for y in range(_BOARD_HEIGHT_BLOCK):
                 for x in range(_BOARD_WIDTH_BLOCK):
                     if self.gameboard[y][x]['objectType'] == MapObject.blob and self.gameboard[y][x]['color'] in self.unconnectedColors:
                         path = self.findPath(x,y,False)
                         # If the path is only the start pos (len 1) or if the goal pos is not a blob
-                        # if(len(path) <= 1 or not(self.gameboard[path[0][1]][path[0][0]]['objectType'] == MapObject.blob)):
-                        #     path = self.findPath(x,y,True)
+                        if(len(path) <= 1 or not(self.gameboard[path[0][1]][path[0][0]]['objectType'] == MapObject.blob)):
+                            # print("disregarding: ",self.gameboard[y][x]['color']," goal: ",self.gameboard[path[0][1]][path[0][0]])
+                            path = self.findPath(x,y,True)
+                            # print("connecting: ",self.gameboard[y][x]['color']," goal: ",self.gameboard[path[0][1]][path[0][0]])
                         self.connectPath(path)
                         self.unconnectedColors.remove(self.gameboard[y][x]['color'])
-                        # print(self.unconnectedColors)
+            # print(self.unconnectedColors, prevUnconnectedColors)

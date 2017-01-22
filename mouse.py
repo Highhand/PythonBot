@@ -20,13 +20,13 @@ def mouseLeftUp():
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
 
 def mouseLeftClick():
-    time.sleep(0.1)
+    time.sleep(0.01)
     mouseLeftDown()
-    time.sleep(0.1)
+    time.sleep(0.01)
     mouseLeftUp()
 
 def mouseDrag(direction, distance):
-    time.sleep(0.1)
+    time.sleep(0.01)
     mouseLeftDown()
     counter = distance
     while (counter > 0):

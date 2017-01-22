@@ -44,9 +44,9 @@ def main():
     game = Game()
     foundWindow = windowToForeground(_WINDOW_NAME)
     if foundWindow:
-        startGame()
+        # startGame()
         game.createGameboard()
-        game.printBoard()
+        # game.printBoard()
         game.connectGameboard()
         # nextLevel()
         # game.createGameboard()
